@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+        <title>App</title>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Daftar Mahasiswa</h1>
+            <form id="form-mahasiswa" method="post">
+                <label for="nama">Nama:</label>
+                <input type="text" id="nama" required>
+
+                <label for="nim">Nim:</label>
+                <input type="number" id="nim" required>
+
+                <button type="submit" id="submit-button">Tambah
+                    Mahasiswa</button>
+            </form>
+
+            <h2>Daftar Mahasiswa</h2>
+            <table id="tabel-mahasiswa">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Nim</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <h2>Edit Mahasiswa</h2>
+                <form id="form-edit">
+                    <input type="hidden" id="edit-id">
+                    <label for="edit-nama">Nama:</label>
+                    <input type="text" id="edit-nama" required>
+
+                    <label for="edit-nim">Nim:</label>
+                    <input type="number" id="edit-nim" required>
+
+                    <button type="submit">Simpan Perubahan</button>
+                </form>
+            </div>
+        </div>
+
+        <script>
+        const url = 'http://localhost:3030/mahasiswa';
+        const tabelMahasiswa = document.getElementById('tabel-mahasiswa').getElementsByTagName('tbody')[0];
+        const formMahasiswa = document.getElementById('form-mahasiswa');
+        const namaInput = document.getElementById('nama');
+        const nimInput = document.getElementById('nim');
+        const editModal = document.getElementById('editModal');
+        const formEdit = document.getElementById('form-edit');
+        const editIdInput = document.getElementById('edit-id');
+        const editNamaInput = document.getElementById('edit-nama');
+        const editNimInput = document.getElementById('edit-nim');
+
+        // Fungsi untuk menampilkan data mahasiswa
+        function tampilkanDataMahasiswa() {
+            tabelMahasiswa.innerHTML = '';
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    data.forEach((mahasiswa, index) => {
+                        const row = tabelMahasiswa.insertRow();
+                        const noCell = row.insertCell();
+                        const namaCell = row.insertCell();
+                        const nimCell = row.insertCell();
+                        const aksiCell = row.insertCell();
+
+                        noCell.textContent = index + 1;
+                        namaCell.textContent = mahasiswa.nama;
+                        nimCell.textContent = mahasiswa.nim;
+                        aksiCell.innerHTML = `
+                            <button onclick="editMahasiswa(${mahasiswa.nim})">Edit</button>
+                            <button onclick="hapusMahasiswa(${mahasiswa.nim})">Hapus</button>
+                        `;
+                    });
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
+        }
+
+        // Panggil fungsi tampilkanDataMahasiswa saat halaman pertama kali dimuat
+        tampilkanDataMahasiswa();
+
+        // Event listener untuk form submit
+        formMahasiswa.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const data = {
+                nama: namaInput.value,
+                nim: parseInt(nimInput.value)
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Mahasiswa berhasil ditambahkan:', data);
+                    namaInput.value = '';
+                    nimInput.value = '';
+                    tampilkanDataMahasiswa();
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
+        });
+
+        // Fungsi untuk menghapus data mahasiswa
+        function hapusMahasiswa(id) {
+            fetch(`${url}/${id}`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Mahasiswa berhasil dihapus:', data);
+                tampilkanDataMahasiswa();
+            })
+            .catch(error => {
+                console.error('There has been a problem with your fetch operation:', error);
+            });
+        }
+
+        // Fungsi untuk menampilkan modal edit
+        
+        // Fungsi untuk menutup modal
+        function closeModal() {
+            editModal.style.display = 'none';
+        }
+
+
+        // Fungsi untuk menampilkan modal edit
+// function editMahasiswa(id) {
+//     fetch(`${url}/${id}`)
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error('Network response was not ok');
+//             }
+//             return response.json();
+//         })
+//         .then(mahasiswa => {
+//             editIdInput.value = mahasiswa.nim; // Simpan NIM lama (jika diperlukan untuk referensi)
+//             editNamaInput.value = mahasiswa.nama;
+//             editNimInput.value = mahasiswa.nim; // Isi dengan NIM saat ini
+//             editModal.style.display = 'block';
+//         })
+//         .catch(error => {
+//             console.error('There has been a problem with your fetch operation:', error);
+//         });
+// }
+
+function editMahasiswa(id) {
+    fetch(`${url}/${id}`)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
+        })
+        .then((mahasiswa) => {
+            editIdInput.value = mahasiswa.nim; // Simpan NIM lama
+            editNamaInput.value = mahasiswa.nama;
+            editNimInput.value = mahasiswa.nim; // Isi dengan NIM saat ini
+            editModal.style.display = "block";
+        })
+        .catch((error) => {
+            console.error("There has been a problem with your fetch operation:", error);
+        });
+}
+
+
+// Event listener untuk form edit
+// formEdit.addEventListener('submit', (event) => {
+//     event.preventDefault();
+
+//     const data = {
+//         nama: editNamaInput.value,
+//         nim: parseInt(editNimInput.value) // Gunakan NIM baru
+//     };
+
+//     // Gunakan NIM baru sebagai identifier untuk update (jika API mendukung)
+//     fetch(`${url}/${editIdInput.value}`, {
+//         method: 'PUT', // Atau PATCH, tergantung API Anda
+//         headers: {
+//             'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify(data),
+//     })
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error('Network response was not ok');
+//             }
+//             return response.json();
+//         })
+//         .then(data => {
+//             console.log('Mahasiswa berhasil diubah:', data);
+//             closeModal();
+//             tampilkanDataMahasiswa(); // Refresh tabel
+//         })
+//         .catch(error => {
+//             console.error('There has been a problem with your fetch operation:', error);
+//         });
+// });
+        
+formEdit.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const data = {
+        nama: editNamaInput.value,
+        nim: editNimInput.value, // Kirim NIM baru jika diubah
+    };
+
+    fetch(`${url}/${editIdInput.value}`, { // Gunakan NIM lama untuk identifikasi
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.json();
+        })
+        .then((data) => {
+            console.log("Mahasiswa berhasil diubah:", data);
+            closeModal();
+            tampilkanDataMahasiswa(); // Refresh tabel
+        })
+        .catch((error) => {
+            console.error("There has been a problem with your fetch operation:", error);
+        });
+});
+
+    </script>
+    </body>
+</html>
