@@ -15,4 +15,10 @@ export class User{
     @Expose()
     role : Role;
 
+    @Expose()
+    create_at :Date
+
+    @Exclude()
+    foto_profile:string
+    
 }

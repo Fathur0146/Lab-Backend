@@ -5,6 +5,9 @@ import { RegisterUserDTO } from './dto/register-user.dto';
 import { compare, compareSync, hashSync } from 'bcrypt';
 import { LoginUserDTO } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { extname, join } from 'path';
+import { equal } from 'assert';
 
 @Injectable()
 export class AppService {
@@ -39,6 +42,67 @@ export class AppService {
          throw new InternalServerErrorException("Terdapat Masalah Dari Server Harap Coba Lagi dalam beberapa menit")
      }
      }
+     async searchMahasiswa(nim?: string) {
+      try {
+        console.log(nim)
+        const mahasiswa = await this.prisma.mahasiswa.findFirst({
+          where:{
+            nim:nim ? {equals:nim}:undefined,
+          },
+        });
+        if (!mahasiswa){
+          throw new NotFoundException('Mahasiswa tidak ditemukan')
+        }
+        return  mahasiswa
+      } catch (error) {
+        throw new InternalServerErrorException('Ada masalah pada server');
+      }
+    }
+    
+
+    async uploadMahasiswaFoto(nim: string, file: Express.Multer.File) {  {
+      const mahasiswa = await this.prisma.mahasiswa.findFirst({ where: { nim } });
+      if (!mahasiswa) throw new NotFoundException('Mahasiswa Tidak Ditemukan');
+    
+      if(!existsSync(join(__dirname, '../uploads/') )) {
+        mkdirSync(join( __dirname, '../uploads/'))
+      } 
+      
+      if (mahasiswa.foto_profile) {
+        const filePath = join(__dirname, '../uploads/', mahasiswa.foto_profile);
+        if (existsSync(filePath)) {
+          rmSync(filePath);
+        }
+      }
+      const uploadedFile = join(__dirname, '../uploads/');
+      const fileExt = extname(file.originalname);
+      const baseFilename = mahasiswa.nim;
+      const uniqueSuffix = Date.now() +'-'+ Math.round(Math.random() * 1e9);
+      const filename = `${baseFilename}-${uniqueSuffix}${fileExt}`;
+      const filePath = `${uploadedFile}${filename}`;
+    
+      console.log(filePath)
+      writeFileSync(filePath, file.buffer);
+      await this.prisma.mahasiswa.update({
+        where: { nim },
+        data: { foto_profile: filename },
+      });
+    
+      return filename;
+    
+    }
+    
+    
+    }
+    
+    async getMahasiswaFoto(nim: string) {
+      const mahasiswa = await this.prisma.mahasiswa.findFirst({
+          where: { nim },
+      });
+    
+      if (!mahasiswa) throw new NotFoundException('Mahasiswa Tidak Ditemukan');
+      return mahasiswa.foto_profile;
+    }
 
      async auth(user_id : number) {
      try {

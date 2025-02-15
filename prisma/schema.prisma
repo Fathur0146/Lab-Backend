@@ -14,11 +14,13 @@ datasource db {
 }
 
 model Mahasiswa {
-  nim String @id
+  nim String @id @db.VarChar(12)
   nama String
   kelas String
   jurusan String
   jenis_kelamin Jenis_Kelamin
+
+  foto_profile String?//menambahkan field foto_profile
 }
 
 enum Jenis_Kelamin{
@@ -30,6 +32,8 @@ model User {
  username String @unique
  password String
  role Role @default(USER)
+ create_at DateTime @default(now())
+ foto_profile String?
 }
 enum Role {
  ADMIN

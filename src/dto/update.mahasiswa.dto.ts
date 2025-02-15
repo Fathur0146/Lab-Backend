@@ -3,9 +3,14 @@ import {IsNotEmpty,IsString,isNotEmpty,Length,IsEnum,} from 'class-validator';
   import { Jenis_Kelamin } from '@prisma/client';
   export class UpdateMahasiswaDTO {
     @ApiProperty({
+      description: "NIM",
+      type: String,
+      example: "1058411133222"
+    })
+    @ApiProperty({
       description: 'Nama mahasiswa',
       type: String,
-      example: 'Muh. Ilham Akbar',
+      example: 'Muh. Fathur Hidayat',
     })
     @IsString()
     @IsNotEmpty()
@@ -14,7 +19,7 @@ import {IsNotEmpty,IsString,isNotEmpty,Length,IsEnum,} from 'class-validator';
     @ApiProperty({
       description: 'Kelas mahasiswa',
       type: String,
-      example: '5B',
+      example: '5D',
     })
     @IsString()
     @IsNotEmpty()

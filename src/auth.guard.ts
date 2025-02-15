@@ -1,33 +1,39 @@
-import { CanActivate, ExecutionContext, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { AppService } from './app.service';
-import { plainToInstance } from 'class-transformer';
-import { User } from './entity/user.entity';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { Request } from "express";
+import { PrismaService } from "../prisma/prisma.service";
+
 @Injectable()
 export class AuthGuard implements CanActivate {
- constructor(
-    private readonly jwtService : JwtService,
-    private readonly appService : AppService ) {}
-canActivate(context: ExecutionContext, ): boolean {
-	//lanjutan source codenya ditaruh di sini
-    const request = context.switchToHttp().getRequest();
-      // Ambil header Authorization
-     const authHeader = request.headers['authorization'];
-     if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing');
-     }
-      // Validasi token (contoh sederhana)
-      const token = authHeader.split(' ')[1]; // Format "Bearer <token>"
-      try {
-       const payload : {
-        id : number
-       } = this.jwtService.verify(token)
-         const user = this.appService.auth(payload.id)
-         request.user = plainToInstance(User, user)
-         }catch(err) {
-       if(err instanceof HttpException) throw err
-       throw new UnauthorizedException('Invalid token')
-     }
-        return true; // Request diizinkan
-     }
+  constructor(private readonly jwtService: JwtService, private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const authHeader = request.headers["authorization"];
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new UnauthorizedException("Invalid Authorization header format");
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+      const payload = this.jwtService.verify(token);
+      const user = await this.prisma.user.findUnique({ where: { id: payload.id } });
+
+      if (!user) {
+        throw new UnauthorizedException("User not found");
+      }
+
+      request["user"] = user;
+      return true;
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        throw new UnauthorizedException("Token has expired");
+      } else if (error.name === "JsonWebTokenError") {
+        throw new UnauthorizedException("Invalid token");
+      }
+      throw new UnauthorizedException("Authentication failed");
+    }
+  }
 }
