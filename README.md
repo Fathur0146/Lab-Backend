@@ -1,4 +1,4 @@
-# Chat Application - Backend (NestJS)
+# Lab Backend (NestJS)
 
 ## Struktur Folder
 
